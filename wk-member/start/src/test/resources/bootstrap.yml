@@ -1,0 +1,58 @@
+spring:
+  application:
+    name: wk.member
+
+  redis:
+    host: ${redis.host}
+    password: ${redis.password}
+    port: ${redis.port}
+
+  cloud:
+    nacos:
+      config:
+        server-addr: 172.26.59.53:8848
+        namespace: ump
+        file-extension: yml
+        shared-configs:
+          - data-id: common.yml
+          - data-id: wk.member.yml
+          - data-id: common-redis.yml
+        username: nacos
+        password: nacos
+
+# 开启sql日志
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+#  config-location: classpath*:/mybatis/**/*.xml
+
+dubbo:
+  application:
+    name: ${spring.application.name}
+    logger: slf4j
+  registry:
+    address: zookeeper://172.26.59.108:2181?backup=172.26.59.40:2181,172.26.59.31:2181
+    timeout: 10000
+  protocol:
+    port: -1
+    dispatcher: message
+    threadpool: fixed
+    threads: 200
+    name: dubbo
+  #  monitor:
+  #    protocol: registry
+  provider:
+    version: 1.0
+    group: ump
+    validation: false
+  consumer:
+    version: 1.0
+    group: ump
+    check: false
+    retries: 0
+    timeout: 10000
+  scan:
+    base-packages: com.wakedata.wk.member
+
+logging:
+  config: classpath:logback-spring.xml

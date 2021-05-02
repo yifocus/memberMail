@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.wakedata.wk.member.score.repository.ScoreRiskConfigMapper">
+    <resultMap type="com.wakedata.wk.member.score.repository.model.ScoreRiskConfigDO" id="ScoreRiskConfigResult">
+        <result column="ID" javaType="long" jdbcType="BIGINT" property="id"/>
+        <result column="EP_ID" javaType="long" jdbcType="BIGINT" property="epId"/>
+        <result column="APP_ID" javaType="long" jdbcType="BIGINT" property="appId"/>
+        <result column="F_TYPE" javaType="int" jdbcType="SMALLINT" property="type"/>
+        <result column="EVENT_KEY" javaType="string" jdbcType="VARCHAR" property="eventKey"/>
+        <result column="EVENT_NAME" javaType="string" jdbcType="VARCHAR" property="eventName"/>
+        <result column="RULE_JSON" javaType="string" jdbcType="VARCHAR" property="ruleJson"/>
+        <result column="VALID_RULE_JSON" javaType="string" jdbcType="VARCHAR" property="validRuleJson"/>
+        <result column="VALID_UPDATE_TIME" javaType="java.util.Date" jdbcType="TIMESTAMP" property="validUpdateTime"/>
+        <result column="DELETED_FLAG" javaType="int" jdbcType="SMALLINT" property="deletedFlag"/>
+        <result column="CREATE_TIME" javaType="java.util.Date" jdbcType="TIMESTAMP" property="createTime"/>
+        <result column="CREATE_BY" javaType="string" jdbcType="VARCHAR" property="createBy"/>
+        <result column="UPDATE_TIME" javaType="java.util.Date" jdbcType="TIMESTAMP" property="updateTime"/>
+        <result column="UPDATE_BY" javaType="string" jdbcType="VARCHAR" property="updateBy"/>
+    </resultMap>
+
+
+    <sql id="SCORE_RISK_CONFIG_COLUMN">
+         EP_ID, APP_ID, F_TYPE
+          , EVENT_KEY, RULE_JSON,VALID_RULE_JSON,VALID_UPDATE_TIME
+          , DELETED_FLAG, CREATE_TIME
+          , CREATE_BY, UPDATE_TIME, UPDATE_BY
+    </sql>
+
+    <select id="queryConfigList" resultMap="ScoreRiskConfigResult">
+        SELECT mse.EVENT_KEY,mse.EVENT_NAME,msr.RULE_JSON
+         FROM m_score_event_config mse
+        LEFT JOIN m_score_risk_config msr ON mse.EVENT_KEY = msr.EVENT_KEY
+         AND mse.EVENT_TYPE = msr.F_TYPE and msr.EP_ID = #{epId} AND msr.APP_ID = #{appId}
+        WHERE mse.EP_ID in(0,#{epId}) AND mse.EVENT_TYPE = #{type}
+        ORDER BY mse.ID ASC
+    </select>
+
+    <select id="getScoreRiskUpdateList" resultMap="ScoreRiskConfigResult">
+        SELECT ID,
+        <include refid="SCORE_RISK_CONFIG_COLUMN"/>
+        FROM m_score_risk_config
+        where UPDATE_TIME >= #{startDate} and UPDATE_TIME &lt;= #{endDate}
+        order by ID ASC
+        limit #{start},#{limit}
+    </select>
+
+    <select id="getScoreRiskConfig" resultMap="ScoreRiskConfigResult">
+        SELECT ID,
+        <include refid="SCORE_RISK_CONFIG_COLUMN"/>
+        FROM m_score_risk_config
+        WHERE EP_ID = #{epId} and APP_ID = #{appId} and F_TYPE = #{type}
+          and EVENT_KEY = #{eventKey}
+    </select>
+
+    <insert id="insert">
+        INSERT INTO m_score_risk_config(<include refid="SCORE_RISK_CONFIG_COLUMN"/>)
+        VALUES (#{epId}
+        ,#{appId},#{type},#{eventKey},#{ruleJson},#{validRuleJson},now()
+        ,#{deletedFlag},now(),#{createBy},now()
+        ,#{updateBy})
+    </insert>
+
+    <update id="autoUpdateValidRuleJson">
+        UPDATE m_score_risk_config
+        SET VALID_RULE_JSON = #{validRuleJson},VALID_UPDATE_TIME = now()
+        where ID = #{id}
+    </update>
+
+    <update id="update">
+      UPDATE  m_score_risk_config
+      SET
+        <if test="epId != null">
+            EP_ID = #{epId},
+        </if>
+        <if test="appId != null">
+            APP_ID = #{appId},
+        </if>
+        <if test="type != null">
+            F_TYPE = #{type},
+        </if>
+        <if test="eventKey != null">
+            EVENT_KEY = #{eventKey},
+        </if>
+        <if test="ruleJson != null">
+            RULE_JSON = #{ruleJson},
+        </if>
+        <if test="validRuleJson != null">
+            VALID_RULE_JSON = #{validRuleJson},VALID_UPDATE_TIME = now(),
+        </if>
+        <if test="deletedFlag != null">
+            DELETED_FLAG = #{deletedFlag},
+        </if>
+        UPDATE_TIME = now(),UPDATE_BY = #{updateBy}
+      WHERE  ID=#{id}
+    </update>
+
+</mapper>

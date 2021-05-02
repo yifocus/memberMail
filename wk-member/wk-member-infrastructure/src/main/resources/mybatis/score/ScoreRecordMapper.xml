@@ -1,0 +1,259 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.wakedata.wk.member.score.repository.ScoreRecordMapper">
+
+    <resultMap type="com.wakedata.wk.member.score.repository.model.ScoreRecordDO" id="MemberScoreRecordMap">
+        <result property="id" column="ID" jdbcType="INTEGER"/>
+        <result property="epId" column="EP_ID" jdbcType="INTEGER"/>
+        <result property="appId" column="APP_ID" jdbcType="INTEGER"/>
+        <result property="storeId" column="STORE_ID" jdbcType="INTEGER"/>
+        <result property="subStoreId" column="SUB_STORE_ID" jdbcType="INTEGER"/>
+        <result property="epName" column="EP_NAME" jdbcType="VARCHAR"/>
+        <result property="appName" column="APP_NAME" jdbcType="VARCHAR"/>
+        <result property="storeName" column="STORE_NAME" jdbcType="VARCHAR"/>
+        <result property="subStoreName" column="SUB_STORE_NAME" jdbcType="VARCHAR"/>
+        <result property="uniqueAccountId" column="UNIQUE_ACCOUNT_ID" jdbcType="VARCHAR"/>
+        <result property="recordNo" column="RECORD_NO" jdbcType="VARCHAR"/>
+        <result property="amount" column="AMOUNT" jdbcType="BIGINT"/>
+        <result property="extAmount" column="EXT_AMOUNT" jdbcType="BIGINT"/>
+        <result property="type" column="F_TYPE" jdbcType="INTEGER"/>
+        <result property="eventKey" column="EVENT_KEY" jdbcType="VARCHAR"/>
+        <result property="eventName" column="EVENT_NAME" jdbcType="VARCHAR"/>
+        <result property="businessType" column="BUSINESS_TYPE" jdbcType="INTEGER"/>
+        <result property="businessNo" column="BUSINESS_NO" jdbcType="VARCHAR"/>
+        <result property="channelId" column="CHANNEL_ID" jdbcType="INTEGER"/>
+        <result property="desc" column="DESC" jdbcType="VARCHAR"/>
+        <result property="operator" column="OPERATOR" jdbcType="VARCHAR"/>
+        <result property="createTime" column="CREATE_TIME" jdbcType="TIMESTAMP"/>
+        <result property="updateTime" column="UPDATE_TIME" jdbcType="TIMESTAMP"/>
+        <result property="scoreRuleId" column="SCORE_RULE_ID" jdbcType="VARCHAR"/>
+        <result property="scoreRuleName" column="SCORE_RULE_NAME" jdbcType="VARCHAR"/>
+    </resultMap>
+
+
+    <resultMap type="com.wakedata.wk.member.score.repository.model.ScoreRiskMemberCacheData" id="ScoreRiskMemberCacheDataMap">
+        <result property="amount" column="AMOUNT" jdbcType="BIGINT"/>
+        <result property="monthAmount" column="MONTH_AMOUNT" jdbcType="BIGINT"/>
+        <result property="frequency" column="FREQUENCY" jdbcType="INTEGER"/>
+        <result property="monthFrequency" column="MONTH_FREQUENCY" jdbcType="INTEGER"/>
+        <result property="version" column="VERSION" jdbcType="BIGINT"/>
+    </resultMap>
+
+    <sql id="MEM_SCORE_RECORD_COLUMN">
+          EP_ID,
+           APP_ID,
+           STORE_ID,
+           SUB_STORE_ID,
+           EP_NAME,
+           APP_NAME,
+           STORE_NAME,
+           SUB_STORE_NAME,
+           UNIQUE_ACCOUNT_ID,
+           RECORD_NO,
+           AMOUNT,
+           EXT_AMOUNT,
+           F_TYPE,
+           EVENT_KEY,
+           EVENT_NAME,
+           BUSINESS_TYPE,
+           BUSINESS_NO,
+           CHANNEL_ID, `DESC`, OPERATOR, CREATE_TIME, UPDATE_TIME,
+           SCORE_RULE_ID,
+           SCORE_RULE_NAME,
+           SCORE_RULE_RATIO
+    </sql>
+
+
+    <!--查询单个-->
+    <select id="queryById" resultMap="MemberScoreRecordMap">
+        select ID,<include refid="MEM_SCORE_RECORD_COLUMN"/>
+        from m_member_score_record
+        where ID = #{id}
+    </select>
+
+    <select id="getMemberScoreIdByEventKey" resultType="java.lang.Long">
+        SELECT MAX(ID) FROM m_member_score_record
+        <include refid="query_member_score_sum_sql"/>
+    </select>
+
+    <select id="getMemberScoreByEventKey" resultMap="ScoreRiskMemberCacheDataMap">
+      SELECT
+        SUM(IFNULL(AMOUNT,0) + IFNULL(EXT_AMOUNT,0)) AS MONTH_AMOUNT,
+        COUNT(ID) AS MONTH_FREQUENCY,
+        SUM(IF(CREATE_TIME>= #{startCreateTime} AND CREATE_TIME &lt;= #{endCreateTime},(IFNULL(AMOUNT,0) + IFNULL(EXT_AMOUNT,0)),0)) AS AMOUNT,
+        COUNT(IF(CREATE_TIME>= #{startCreateTime} AND CREATE_TIME &lt;= #{endCreateTime},ID,NULL)) AS FREQUENCY
+       FROM m_member_score_record
+        <include refid="query_member_score_sum_sql"/>
+    </select>
+
+
+    <sql id="query_member_score_sum_sql">
+        where EP_ID = #{epId} AND F_TYPE = #{type}
+            AND UNIQUE_ACCOUNT_ID = #{uniqueAccountId}
+            <if test="appId != null and appId > 0">
+                AND APP_ID = #{appId}
+            </if>
+            <if test="eventKey != null and eventKey != ''">
+                AND EVENT_KEY = #{eventKey}
+            </if>
+            <if test="startMonthCreateTime != null">
+                and CREATE_TIME &gt;= #{startMonthCreateTime}
+            </if>
+            <if test="endMonthCreateTime != null">
+                and CREATE_TIME &lt;= #{endMonthCreateTime}
+            </if>
+            <if test="id != null">
+                and ID &lt;= #{id}
+            </if>
+    </sql>
+
+    <!--通过实体作为筛选条件查询-->
+    <select id="queryAll" resultMap="MemberScoreRecordMap">
+        select ID,<include refid="MEM_SCORE_RECORD_COLUMN"/>
+        from m_member_score_record
+        <where>
+            <if test="id != null">
+                and ID = #{id}
+            </if>
+            <if test="epId != null">
+                and EP_ID = #{epId}
+            </if>
+            <if test="appId != null">
+                and APP_ID = #{appId}
+            </if>
+            <if test="uniqueAccountId != null and uniqueAccountId != ''">
+                and UNIQUE_ACCOUNT_ID = #{uniqueAccountId}
+            </if>
+            <if test="recordNo != null and recordNo != ''">
+                and RECORD_NO = #{recordNo}
+            </if>
+            <if test="amount != null">
+                and AMOUNT = #{amount}
+            </if>
+            <if test="extAmount != null">
+                and EXT_AMOUNT = #{extAmount}
+            </if>
+            <if test="type != null">
+                and F_TYPE = #{type}
+            </if>
+            <if test="eventKey != null and eventKey != ''">
+                and EVENT_KEY = #{eventKey}
+            </if>
+            <if test="businessType != null">
+                and BUSINESS_TYPE = #{businessType}
+            </if>
+            <if test="businessNo != null and businessNo != ''">
+                and BUSINESS_NO = #{businessNo}
+            </if>
+            <if test="channelId != null">
+                and CHANNEL_ID = #{channelId}
+            </if>
+            <if test="desc != null and desc != ''">
+                and `DESC` = #{desc}
+            </if>
+            <if test="operator != null and operator != ''">
+                and OPERATOR = #{operator}
+            </if>
+            <if test="startCreateTime != null">
+                and CREATE_TIME &gt;= #{startCreateTime}
+            </if>
+            <if test="endCreateTime != null">
+                and CREATE_TIME &lt;= #{endCreateTime}
+            </if>
+            <if test="updateTime != null">
+                and UPDATE_TIME = #{updateTime}
+            </if>
+            <if test="scoreRuleIdList != null and scoreRuleIdList.size > 0">
+                <foreach collection="scoreRuleIdList" item="item">
+                    and FIND_IN_SET(#{item},SCORE_RULE_ID)
+                </foreach>
+            </if>
+        </where>
+    </select>
+
+    <!--新增所有列-->
+    <insert id="insert" keyProperty="id" useGeneratedKeys="true">
+        insert into m_member_score_record(<include refid="MEM_SCORE_RECORD_COLUMN"/>)
+        values (#{epId}, #{appId},#{storeId},#{subStoreId}
+        ,#{epName},#{appName},#{storeName},#{subStoreName}, #{uniqueAccountId}, #{recordNo}
+        , #{amount}, #{extAmount}, #{type}, #{eventKey},#{eventName},
+        #{businessType}, #{businessNo}, #{channelId}, #{desc}, #{operator}, now(),
+        now(),#{scoreRuleId},#{scoreRuleName},#{scoreRuleRatio})
+    </insert>
+
+    <!--通过主键修改数据-->
+    <update id="update">
+        update m_member_score_record
+        <set>
+            <if test="epId != null">
+                EP_ID = #{epId},
+            </if>
+            <if test="appId != null">
+                APP_ID = #{appId},
+            </if>
+            <if test="storeId != null">
+                STORE_ID = #{storeId},
+            </if>
+            <if test="subStoreId != null">
+                SUB_STORE_ID = #{subStoreId},
+            </if>
+            <if test="epName != null and epName != ''">
+                EP_NAME = #{epName},
+            </if>
+            <if test="appName != null and appName != ''">
+                APP_NAME = #{appName},
+            </if>
+            <if test="storeName != null and storeName != ''">
+                STORE_NAME = #{storeName},
+            </if>
+            <if test="subStoreName != null and subStoreName != ''">
+                SUB_STORE_NAME = #{subStoreName},
+            </if>
+            <if test="uniqueAccountId != null and uniqueAccountId != ''">
+                UNIQUE_ACCOUNT_ID = #{uniqueAccountId},
+            </if>
+            <if test="recordNo != null and recordNo != ''">
+                RECORD_NO = #{recordNo},
+            </if>
+            <if test="amount != null">
+                AMOUNT = #{amount},
+            </if>
+            <if test="extAmount != null">
+                EXT_AMOUNT = #{extAmount},
+            </if>
+            <if test="type != null">
+                F_TYPE = #{type},
+            </if>
+            <if test="eventKey != null and eventKey != ''">
+                EVENT_KEY = #{eventKey},
+            </if>
+            <if test="eventName != null and eventName != ''">
+                EVENT_NAME = #{eventName},
+            </if>
+            <if test="businessType != null">
+                BUSINESS_TYPE = #{businessType},
+            </if>
+            <if test="businessNo != null and businessNo != ''">
+                BUSINESS_NO = #{businessNo},
+            </if>
+            <if test="channelId != null">
+                CHANNEL_ID = #{channelId},
+            </if>
+            <if test="desc != null and desc != ''">
+                `DESC` = #{desc},
+            </if>
+            <if test="operator != null and operator != ''">
+                OPERATOR = #{operator},
+            </if>
+            <if test="scoreRuleId != null and scoreRuleId != ''">
+                SCORE_RULE_ID = #{scoreRuleId},
+            </if>
+            <if test="scoreRuleName != null and scoreRuleName != ''">
+                SCORE_RULE_NAME = #{scoreRuleName},
+            </if>
+            UPDATE_TIME = now()
+        </set>
+        where ID = #{id}
+    </update>
+
+</mapper>

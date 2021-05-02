@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.wakedata.wk.member</groupId>
+        <artifactId>wk-member-parent</artifactId>
+        <version>1.0.0-DD01</version>
+    </parent>
+
+    <artifactId>wk-member-domain</artifactId>
+    <name>wk-member-domain</name>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.alibaba.cola</groupId>
+            <artifactId>cola-component-domain-starter</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.alibaba.cola</groupId>
+            <artifactId>cola-component-exception</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.wakedata.wk.member</groupId>
+            <artifactId>wk-member-client</artifactId>
+        </dependency>
+    </dependencies>
+
+</project>
